@@ -26,19 +26,8 @@ async def connect_to_mongo():
         db_manager.db = db_manager.client[settings.DB_NAME]
         logger.info(f"Successfully connected to MongoDB database '{settings.DB_NAME}'.")
     except Exception as e:
-        logger.warning(f"MongoDB connection attempt note: {e}")
-        if settings.USE_MOCK_DB_IF_DISCONNECTED:
-            logger.info("Initializing in-memory MongoMock motor client fallback for seamless operation...")
-            try:
-                import mongomock_motor
-                db_manager.client = mongomock_motor.AsyncMongoMockClient()
-                db_manager.db = db_manager.client[settings.DB_NAME]
-                logger.info("MongoMock database initialized successfully.")
-            except ImportError:
-                logger.error("mongomock_motor is not installed. Unable to fall back.")
-                raise e
-        else:
-            raise e
+        logger.error(f"Failed to connect to MongoDB database at {settings.MONGO_URI}: {e}")
+        raise e
 
 async def close_mongo_connection():
     if db_manager.client:

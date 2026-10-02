@@ -96,7 +96,12 @@ async def register_user(user_data: UserSignUp) -> dict:
 
 async def authenticate_user(login_data: UserLogin) -> TokenResponse:
     db = get_database()
-    login_id = login_data.email.strip()
+    login_id = login_data.identifier
+    if not login_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Email or Employee ID is required."
+        )
     
     # Allow login by Email OR Employee ID (case-insensitive)
     user = await db.users.find_one({

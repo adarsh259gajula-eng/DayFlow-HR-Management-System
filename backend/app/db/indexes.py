@@ -33,4 +33,4 @@ async def create_indexes():
         
         logger.info("MongoDB indexes verified and created successfully.")
     except Exception as e:
-        logger.warning(f"Could not create indexes (might be mock DB or existing indexes): {e}")
+        logger.warning(f"Could not create indexes (might be existing indexes): {e}")

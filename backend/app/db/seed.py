@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime, date, timezone, timedelta
 from app.db.mongodb import connect_to_mongo, close_mongo_connection, get_database
+from app.db.indexes import create_indexes
 from app.core.security import hash_password
 
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,8 @@ async def seed_data():
     await db.payroll_slips.delete_many({})
     await db.activity_feed.delete_many({})
     await db.notifications.delete_many({})
+    await db.job_postings.delete_many({})
+    await db.candidates.delete_many({})
     
     now = datetime.now(timezone.utc)
     current_month = now.strftime("%Y-%m")
@@ -272,11 +275,105 @@ async def seed_data():
     ]
     await db.activity_feed.insert_many(activities)
 
+    # 7. Insert Sample Job Postings
+    seed_jobs = [
+        {"title": "Senior Full-Stack Engineer", "department": "Engineering", "location": "Remote", "job_type": "Full-Time", "description": "Looking for lead full-stack developer with React & FastAPI experience.", "status": "Open", "applicants_count": 2, "created_by": "EMP1000", "created_at": now, "updated_at": now},
+        {"title": "HR Talent Acquisition Partner", "department": "Human Resources", "location": "Hybrid", "job_type": "Full-Time", "description": "Experienced recruiter for technical and non-technical hiring.", "status": "Open", "applicants_count": 1, "created_by": "EMP1000", "created_at": now, "updated_at": now},
+        {"title": "Product Marketing Lead", "department": "Marketing", "location": "On-site", "job_type": "Full-Time", "description": "Lead go-to-market strategies and organic user growth.", "status": "Open", "applicants_count": 1, "created_by": "EMP1000", "created_at": now, "updated_at": now},
+    ]
+    job_res = await db.job_postings.insert_many(seed_jobs)
+    job_ids = [str(x) for x in job_res.inserted_ids]
+
+    # 8. Insert Sample Candidates for Kanban Pipeline
+    seed_cands = [
+        {"job_id": job_ids[0] if len(job_ids) > 0 else "", "job_title": "Senior Full-Stack Engineer", "name": "Rohan Sharma", "email": "rohan.s@example.com", "phone": "+91 9876543210", "stage": "Screening", "interviewer_notes": "Strong React & FastAPI background. Good communication.", "applied_date": now.strftime("%Y-%m-%d"), "created_at": now, "updated_at": now},
+        {"job_id": job_ids[0] if len(job_ids) > 0 else "", "job_title": "Senior Full-Stack Engineer", "name": "Ananya Patel", "email": "ananya.p@example.com", "phone": "+91 9812345678", "stage": "Interview", "interviewer_notes": "Scheduled technical architecture round for Thursday.", "applied_date": now.strftime("%Y-%m-%d"), "created_at": now, "updated_at": now},
+        {"job_id": job_ids[1] if len(job_ids) > 1 else "", "job_title": "HR Talent Acquisition Partner", "name": "Priya Verma", "email": "priya.v@example.com", "phone": "+91 9988776655", "stage": "Offer Extended", "interviewer_notes": "Offer letter generated. Awaiting confirmation.", "applied_date": now.strftime("%Y-%m-%d"), "created_at": now, "updated_at": now},
+        {"job_id": job_ids[2] if len(job_ids) > 2 else "", "job_title": "Product Marketing Lead", "name": "Vikram Malhotra", "email": "vikram.m@example.com", "phone": "+91 9711223344", "stage": "Applied", "interviewer_notes": "New applicant profile received.", "applied_date": now.strftime("%Y-%m-%d"), "created_at": now, "updated_at": now},
+    ]
+    await db.candidates.insert_many(seed_cands)
+
+    # 9. Insert Sample Payroll Slips
+    sample_payroll = [
+        {
+            "employee_id": "EMP1001",
+            "employee_name": "Jane Doe",
+            "department": "Engineering",
+            "month": current_month,
+            "attendance_summary": {
+                "present": 20,
+                "half_day": 0,
+                "absent": 0,
+                "paid_leave": 1,
+                "unpaid_leave": 0,
+                "total_working_days": 22
+            },
+            "salary_breakdown": {
+                "basic": 75000.0,
+                "hra": 30000.0,
+                "allowances": 12000.0,
+                "standard_deductions": 6000.0,
+                "per_day_rate": 5318.18,
+                "unpaid_leave_deduction": 0.0,
+                "gross_salary": 117000.0,
+                "total_deductions": 6000.0,
+                "net_salary": 111000.0
+            },
+            "gross_salary": 117000.0,
+            "deductions": 6000.0,
+            "net_salary": 111000.0,
+            "scheduled_payday": "10th of month",
+            "scheduled_disbursement_date": f"{current_month}-10",
+            "generated_by": "EMP1000",
+            "generated_at": now,
+            "status": "finalized"
+        },
+        {
+            "employee_id": "EMP1002",
+            "employee_name": "John Smith",
+            "department": "Engineering",
+            "month": current_month,
+            "attendance_summary": {
+                "present": 19,
+                "half_day": 1,
+                "absent": 0,
+                "paid_leave": 0,
+                "unpaid_leave": 0,
+                "total_working_days": 22
+            },
+            "salary_breakdown": {
+                "basic": 60000.0,
+                "hra": 24000.0,
+                "allowances": 10000.0,
+                "standard_deductions": 5000.0,
+                "per_day_rate": 4272.73,
+                "unpaid_leave_deduction": 0.0,
+                "gross_salary": 94000.0,
+                "total_deductions": 5000.0,
+                "net_salary": 89000.0
+            },
+            "gross_salary": 94000.0,
+            "deductions": 5000.0,
+            "net_salary": 89000.0,
+            "scheduled_payday": "10th of month",
+            "scheduled_disbursement_date": f"{current_month}-10",
+            "generated_by": "EMP1000",
+            "generated_at": now,
+            "status": "draft"
+        }
+    ]
+    await db.payroll_slips.insert_many(sample_payroll)
+
+    # 10. Ensure all database indexes are created
+    await create_indexes()
+
     logger.info("Dayflow Seeding Completed Successfully!")
     logger.info("Credentials Created:")
     logger.info("  Admin:    admin@dayflow.com  / Admin@1234")
     logger.info("  Employee: jane@company.com   / Employee@1234")
     logger.info("  Employee: john@company.com   / Employee@1234")
+    logger.info("  Employee: alice@company.com  / Employee@1234")
+    logger.info("  Employee: bob@company.com    / Employee@1234")
 
     await close_mongo_connection()
 

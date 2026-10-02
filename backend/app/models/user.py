@@ -14,8 +14,14 @@ class UserSignUp(BaseModel):
     full_name: Optional[str] = Field("", description="Full name of the employee")
 
 class UserLogin(BaseModel):
-    email: str
+    email: Optional[str] = None
+    login_id: Optional[str] = None
+    username_or_email: Optional[str] = None
     password: str
+
+    @property
+    def identifier(self) -> str:
+        return (self.email or self.login_id or self.username_or_email or "").strip()
 
 class ForgotPasswordRequest(BaseModel):
     login_id: str

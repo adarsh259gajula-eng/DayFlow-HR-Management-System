@@ -26,10 +26,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,13 +50,38 @@ app.include_router(dashboard.router)
 app.include_router(reports.router)
 app.include_router(recruitment.router)
 
-@app.get("/")
-async def root():
+@app.get("/api/health")
+async def health_check():
     return {
         "status": "online",
         "app": settings.PROJECT_NAME,
         "docs": "/docs"
     }
+
+# Unified SPA deployment support
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+if os.path.exists(frontend_dist) and os.path.exists(os.path.join(frontend_dist, "index.html")):
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not Found")
+        file_path = os.path.join(frontend_dist, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "status": "online",
+            "app": settings.PROJECT_NAME,
+            "docs": "/docs"
+        }
 
 if __name__ == "__main__":
     import uvicorn

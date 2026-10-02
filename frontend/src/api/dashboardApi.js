@@ -5,10 +5,13 @@ export const dashboardApi = {
   getAdminDashboard: () => axiosClient.get('/dashboard/admin'),
 };
 
+const apiPrefix = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+const normalizedPrefix = apiPrefix.endsWith('/api') ? apiPrefix : `${apiPrefix}/api`;
+
 export const reportsApi = {
-  getPaystubPdfUrl: (slipId) => `/api/reports/paystub/${slipId}/pdf`,
-  getAttendanceCsvUrl: (month) => `/api/reports/attendance/csv?month=${month}`,
-  getPayrollCsvUrl: (month) => `/api/reports/payroll/csv?month=${month}`,
-  getLeaveCsvUrl: (month) => `/api/reports/leave/csv${month ? `?month=${month}` : ''}`,
-  getEmployeesCsvUrl: () => `/api/reports/employees/csv`,
+  getPaystubPdfUrl: (slipId) => `${normalizedPrefix}/reports/paystub/${slipId}/pdf`,
+  getAttendanceCsvUrl: (month) => `${normalizedPrefix}/reports/attendance/csv?month=${month}`,
+  getPayrollCsvUrl: (month) => `${normalizedPrefix}/reports/payroll/csv?month=${month}`,
+  getLeaveCsvUrl: (month) => `${normalizedPrefix}/reports/leave/csv${month ? `?month=${month}` : ''}`,
+  getEmployeesCsvUrl: () => `${normalizedPrefix}/reports/employees/csv`,
 };
