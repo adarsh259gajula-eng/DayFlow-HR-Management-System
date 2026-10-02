@@ -1,9 +1,31 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
+export function getApiBaseUrl() {
+  const envUrl = (
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_BACKEND_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    ''
+  ).trim();
+
+  if (!envUrl) {
+    return '/api';
+  }
+
+  // Remove all trailing slashes
+  const cleanUrl = envUrl.replace(/\/+$/, '');
+
+  // If the env var already includes /api, return it directly
+  if (cleanUrl.endsWith('/api')) {
+    return cleanUrl;
+  }
+
+  // Otherwise append /api without double slashes
+  return `${cleanUrl}/api`;
+}
 
 const axiosClient = axios.create({
-  baseURL: baseURL.endsWith('/api') ? baseURL : `${baseURL}/api`.replace(/\/\//g, '/').replace(':/', '://'),
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

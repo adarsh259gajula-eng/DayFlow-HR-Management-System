@@ -33,12 +33,23 @@ from fastapi.responses import FileResponse
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[
+        "https://day-flow-hr-management-system.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+    ] + settings.CORS_ORIGINS,
     allow_origin_regex=r"https?://.*",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "*"],
 )
+
+@app.options("/{full_path:path}")
+async def preflight_options_handler(full_path: str):
+    return {"status": "ok"}
 
 # Register routers
 app.include_router(auth.router)
@@ -53,10 +64,14 @@ app.include_router(recruitment.router)
 @app.get("/api/health")
 async def health_check():
     return {
-        "status": "online",
+        "status": "ok",
         "app": settings.PROJECT_NAME,
         "docs": "/docs"
     }
+
+@app.get("/health")
+async def health_root():
+    return {"status": "ok"}
 
 # Unified SPA deployment support
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
